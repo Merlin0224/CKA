@@ -1,0 +1,11 @@
+[workspace]
+authors = ["merlin0224 <3345967904@qq.com>"]
+channels = ["conda-forge"]
+name = "cka"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.10.*"
