@@ -14,6 +14,8 @@ import pyarrow.dataset as ds
 import pandas as pd
 import glob
 import numpy as np
+import csv
+import time
 
 class VisualAligner(nn.Module):
     """
@@ -37,7 +39,7 @@ class VisualAligner(nn.Module):
             v_global = v.mean(dim=0, keepdim=True) # [1, Dim]
             
         return v_global
-        
+
 # 定义一个物理意义上的全局缓存，确保所有模块都能访问
 GLOBAL_VLM_CACHE = {"visual_feat": None}
 
@@ -300,6 +302,152 @@ def train_injection_modules(model, processor, dataset, steps=20):
     print("✅ 微调完成！")
 
 
+def get_timestamp():
+    return time.strftime("%Y%m%d-%H%M%S", time.localtime())
+
+def save_experiment_results(results_list, base_name="steering_report"):
+    timestamp = get_timestamp()
+    filename = f"{base_name}_{timestamp}.csv"
+
+    df = pd.DataFrame(results_list)
+    df.to_csv(filename, index=False)
+    print(f"\n✅ 实验数据已实时保存至: {filename}")
+
+# =============== 激活干预模块 ===============
+class ActivationSteeringHook:
+    def __init__(self, steering_vector=None, alpha=1.0):
+        """
+        steering_vector: 提取出的“视觉忠实方向”向量 [1, 1, hidden_dim]
+        alpha: 干预强度
+        """
+        self.steering_vector = steering_vector
+        self.alpha = alpha
+        self.trigger_count = 0 
+    
+    def __call__(self, module, input, output):
+        # 只有在推理生成阶段，并且有设定干预向量时才执行注入
+        if self.steering_vector is not None:
+            if self.trigger_count == 0:
+                print(f"  [Hook Debug] 激活干预已成功触发! 强度 Alpha = {self.alpha}")
+            self.trigger_count += 1
+
+            hidden_states = output[0] if isinstance(output, tuple) else output
+
+            # 维度对齐：确保 steering_vector 在当前设备上
+            vec = self.steering_vector.to(hidden_states.device, dtype=hidden_states.dtype)
+
+            # 强行在隐空间中叠加"视觉忠实方向"
+            new_hidden_states = hidden_states + self.alpha * vec
+
+            if isinstance(output, tuple):
+                return (new_hidden_states, ) + output[1:]
+            return new_hidden_states
+        return output
+
+
+# ============== 计算"视觉忠实方向" ===============
+def extract_visual_truth_vector(model, processor, dataset, target_layer_idx, num_samples=20):
+    """
+    通过对比“图文匹配(正样本)”和“图文不匹配(负样本)”的内部激活差异，
+    提取出代表“关注视觉事实”的几何方向向量。
+    """
+    print(f"\n🔍 正在 Layer {target_layer_idx} 提取视觉忠实方向 (Steering Vector)...")
+    model.eval()
+
+    # 临时探针: 用于抓取指定层的隐藏状态
+    activation_cache = {}
+    def cache_hook(module, input, output):
+        activation_cache['feat'] = output[0].detach() if isinstance(output, tuple) else output.detach()
+    
+    layer_module = model.model.language_model.layers[target_layer_idx]
+    handle = layer_module.register_forward_hook(cache_hook)
+
+    pos_activations = []
+    neg_activations = []
+
+    for i, item in enumerate(dataset):
+        if i >= num_samples: break
+        image = item['image']
+
+        # 正样本前向传播(GT=True) -> 获取关注图像时的状态
+        if item['gt'] == True:
+            messages =[{"role": "user", "content":[{"type": "image", "image": image}, {"type": "text", "text": item['prompt']}]}]
+            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            inputs = processor(text=[text], images=[image], padding=True, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                model(**inputs)
+            # 取最后一个 token 的激活值作为句子表征
+            pos_activations.append(activation_cache['feat'][:, -1:, :].mean(dim=0, keepdim=True))
+        
+        # 负样本前向传播(GT=False) -> 获取产生幻觉冲动时的状态
+        else:
+            messages =[{"role": "user", "content":[{"type": "image", "image": image}, {"type": "text", "text": item['prompt']}]}]
+            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            inputs = processor(text=[text], images=[image], padding=True, return_tensors="pt").to(model.device)
+            with torch.no_grad():
+                model(**inputs)
+            neg_activations.append(activation_cache['feat'][:, -1:, :].mean(dim=0, keepdim=True))
+
+    handle.remove() # 卸载探针
+    
+    # 计算均值差异向量(Mean Difference Vector)
+    # 这个向量的物理意义：从"瞎编"的隐空间指向"忠实于图像"的隐空间
+    pos_mean = torch.cat(pos_activations, dim=0).mean(dim=0, keepdim=True)
+    neg_mean = torch.cat(neg_activations, dim=0).mean(dim=0, keepdim=True)
+
+    steering_vector = pos_mean - neg_mean
+
+    norm_val = torch.norm(steering_vector, p=2, dim=-1, keepdim=True)
+    print(f"  -> 原始向量幅度 (Norm): {norm_val.item():.6f}")
+    
+    # 强制将向量拉伸到长度为 1，这样 Alpha 的控制才有物理意义
+    steering_vector = steering_vector / (norm_val + 1e-6) 
+    return steering_vector
+
+def run_layer_wise_steering_experiment(model, processor, dataset, test_dataset):
+    # 要探查的广度: 扫描大模型浅、中、深各个层级
+    sweep_layers = [2, 6, 10, 14, 18, 22]
+    alphas = [10.0, 30.0] # 不同的干预强度
+
+    # 记录实验结果的字典
+    experiment_results = {}
+    results_list = []
+    # baseline(无任何干预)
+    print("\n================ [Baseline] ================")
+    baseline_res = run_eval(model, processor, test_dataset)
+    experiment_results['Baseline'] = calculate_hallucination_rate(baseline_res)
+    print(f"Baseline: {experiment_results['Baseline']}")
+    results_list.append({"Layer": "Baseline", "Alpha": 0.0, **baseline_res})
+    # 自动化进行大规模层级探查
+    for layer_idx in sweep_layers:
+        # 提取当前层的干预向量
+        steering_vec = extract_visual_truth_vector(model, processor, dataset, layer_idx, num_samples=50)
+
+        for alpha in alphas:
+            print(f"\n================ [Layer {layer_idx} | Alpha {alpha}] ================")
+
+            # 挂载激活干预 Hook
+            steering_hook_obj = ActivationSteeringHook(steering_vector=steering_vec, alpha=alpha)
+            layer_module = model.model.language_model.layers[layer_idx]
+            handle = layer_module.register_forward_hook(steering_hook_obj)
+
+            res = run_eval(model, processor, test_dataset)
+            result_str = calculate_hallucination_rate(res)
+
+            experiment_results[f'Layer_{layer_idx}_Alpha_{alpha}'] = result_str
+            print(f"Result: {result_str}")
+            row = {"Layer": layer_idx, "Alpha": alpha, **res}
+            results_list.append(row)
+
+            save_experiment_results(results_list)
+
+            handle.remove()
+    
+    return experiment_results
+    
+
+
+
 def main():
     # 1.加载模型与注入模块
     # model_dir = snapshot_download("qwen/Qwen2-VL-7B-Instruct")
@@ -324,26 +472,29 @@ def main():
         local_files_only=True
     )
     
-    model = load_model_and_injectors(model)
+    # model = load_model_and_injectors(model)
     LOCAL_DATA_DIR = "/root/autodl-tmp/modelscope_datasets/flickr30k/data"
-    test_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=1000)
-    train_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=2000)
+    test_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=50)
+    train_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=100)
     
-    # 2.实验 A: Baseline 测试(关闭注入)
-    set_injector_gate(model, 0.0)
-    baseline_results = run_eval(model, processor, test_set)
+    # # 2.实验 A: Baseline 测试(关闭注入)
+    # set_injector_gate(model, 0.0)
+    # baseline_results = run_eval(model, processor, test_set)
 
-    # 训练
-    set_injector_gate(model, 0.1)
-    train_injection_modules(model, processor, train_set, steps=30)
-    # 3.实验 B: Proposed 测试(开启注入)
+    # # 训练
+    # set_injector_gate(model, 0.1)
+    # train_injection_modules(model, processor, train_set, steps=30)
+    # # 3.实验 B: Proposed 测试(开启注入)
     
-    proposed_results = run_eval(model, processor, test_set)
+    # proposed_results = run_eval(model, processor, test_set)
 
-    # 4.打印对比报告
-    print("\n🔥 [对比实验报告]")
-    print(f"Baseline 幻觉率: {calculate_hallucination_rate(baseline_results)}")
-    print(f"Proposed 幻觉率: {calculate_hallucination_rate(proposed_results)}")
+    # # 4.打印对比报告
+    # print("\n🔥 [对比实验报告]")
+    # print(f"Baseline 幻觉率: {calculate_hallucination_rate(baseline_results)}")
+    # print(f"Proposed 幻觉率: {calculate_hallucination_rate(proposed_results)}")
+
+    all_results = run_layer_wise_steering_experiment(model, processor, train_set, test_set)
+    print(all_results)
 
 if __name__ == "__main__":
     main()
