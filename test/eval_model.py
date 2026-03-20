@@ -1,16 +1,9 @@
 import torch
-from injection import ResidualInjector
+from injection import ResidualInjector, ChannelSaliencyGate
 import torch.nn as nn
 from transformers import Qwen2VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
 from modelscope import snapshot_download
-import spacy
-import pandas as pd
-import pyarrow.parquet as pq
-import random
-import io
-import os
-from PIL import Image
-import pyarrow.dataset as ds
+from dataload import build_pope_dataset, extract_object_from_caption
 import pandas as pd
 import glob
 import numpy as np
@@ -157,6 +150,31 @@ def load_model_and_injectors(model):
         get_injection_hook(injector, aligner, visual_merger)
     )
     print("✅ 残差注入模块已挂载至第 6 层！")
+    return model
+
+def load_Channel(model):
+    in_dim = 5120
+    
+    for name, module in model.named_modules():
+        if "visual.merger.mlp" in name:
+            first_layer = None
+            for sub_module in module.modules():
+                if isinstance(sub_module, nn.Linear):
+                    first_layer = sub_module
+                    break
+            
+            if first_layer:
+                in_dim = first_layer.in_features
+                print(f"✅ 自动探测到通道维度 (in_dim): {in_dim}")
+            gate = ChannelSaliencyGate(channels=in_dim).to(device=model.device, dtype=torch.bfloat16)
+            original_mlp = module
+            new_mlp = nn.Sequential(gate, original_mlp)
+            
+            # 动态替换
+            parent_name = name.rsplit(".", 1)[0]
+            parent_module = dict(model.named_modules())[parent_name]
+            setattr(parent_module, name.split(".")[-1], new_mlp)
+            break
     return model
 
 def calculate_hallucination_rate(results):
@@ -402,6 +420,7 @@ def main():
     )
     
     # model = load_model_and_injectors(model)
+    model = load_Channel(model)
     LOCAL_DATA_DIR = "/root/autodl-tmp/modelscope_datasets/flickr30k/data"
     test_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=50)
     train_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=100)

@@ -40,7 +40,36 @@ class VisualAligner(nn.Module):
         v_pooled = v.mean(dim=1, keepdim=True)
         return v_pooled.expand(-1, target_seq_len, -1)
 
+class ChannelSaliencyGate(nn.Module):
+    """
+    通道显著性门控
+    通过对特征通道的加权，抑制背景噪声，放大语义显著通道
+    """
+    def __init__(self, channels, reduction=8):
+        super().__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channels, channels // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channels // reduction, channels, bias=False),
+            nn.Sigmoid()
+        )
+    
+    def forward(self, x):
+         # 自动探测维度：如果输入是 2D [Batch, Channels]，转为 3D 处理
+        is_2d = (x.dim() == 2)
+        if is_2d:
+            x = x.unsqueeze(1) # 变为 [Batch, 1, Channels]
+            
+        b, s, c = x.shape
+        # 1. 空间池化: [Batch, Channels, 1]
+        y = self.avg_pool(x.permute(0, 2, 1))
+        # 2. 预测权重: [Batch, Channels, 1]
+        y = self.fc(y.view(b, c)).view(b, c, 1)
+        # 3. 加权: [Batch, Seq, Channels]
+        out = x * y.permute(0, 2, 1)
         
+        return out.squeeze(1) if is_2d else out
 
 def get_injection_hook(injector_module, aligned_visual):
     def hook(module, input, output):
