@@ -9,3 +9,5 @@ version = "0.1.0"
 
 [dependencies]
 python = "3.10.*"
+modelscope = ">=1.35.1,<2"
+packaging = ">=26.0,<27"
