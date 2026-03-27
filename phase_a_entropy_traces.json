@@ -1,0 +1,770 @@
+[
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.298078495892696e-05,
+      1.2579820349856163e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.00020560446137096733,
+      3.183505032211542e-05
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      7.456317234755261e-07,
+      4.330649062467273e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.04936036467552185,
+      3.168380135321058e-05
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      3.0471755962935276e-07,
+      4.4947836386199924e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      8.145589163177647e-06,
+      2.0823988222673506e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.5925269281069632e-07,
+      8.971989018391469e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      3.400006676201883e-08,
+      9.204988486999355e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.026469077914953232,
+      8.867238648235798e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      7.832324655510092e-08,
+      1.3936529512648121e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      5.033092384110205e-05,
+      1.5760002725073718e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      7.63942352932645e-07,
+      2.0086275753783411e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.0003224362444598228,
+      4.5214835608931025e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.0037719819229096174,
+      3.4932616017613327e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.00098594487644732,
+      2.473910853950656e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.0461127430971828e-07,
+      4.463976779334189e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.009080220013856888,
+      4.342649390309816e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      2.651438262546435e-05,
+      1.607230188938047e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.011261348612606525,
+      8.966786845121533e-05
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      4.2609741512933397e-07,
+      1.2485725164879113e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.6386590573347348e-07,
+      4.9580212362343445e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      2.4936161935329437e-06,
+      9.011627298605163e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.1559467338884133e-06,
+      1.1251056548644556e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      2.6150334520025353e-07,
+      2.781786747618753e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.04018367826938629,
+      4.348044058133382e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.10941614210605621,
+      5.551182766794227e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      2.5334570636914577e-06,
+      4.484608666643908e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.5303142070770264,
+      1.7693874951874022e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      2.3334536081165425e-07,
+      1.7287007949562394e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      8.437334741984159e-08,
+      4.3744266804424115e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "no",
+    "entropy_trace": [
+      0.5303083658218384,
+      2.241747461084742e-05
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      8.043341222219169e-05,
+      5.529861482500564e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.026468336582183838,
+      5.557580152526498e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      7.1219112385279e-08,
+      7.278938483068487e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      4.0790467892293236e-07,
+      9.140762244896905e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      1.7621852066440624e-07,
+      4.4786105490857153e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.003773322096094489,
+      7.842266313673463e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.0015450771898031235,
+      7.091539373504929e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.5798864296812098e-06,
+      7.993462531885598e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.0030209734104573727,
+      2.688122094696155e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      3.7296535992936697e-07,
+      8.023989153116418e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      4.4776626850762113e-07,
+      8.958166972661274e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.00020431326993275434,
+      1.9962526494055055e-05
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.00012988891103304923,
+      3.132259735139087e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.0841262110261596e-07,
+      2.4967309286694217e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      5.289538052011267e-08,
+      3.751230792659044e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.0401848740875721,
+      2.177385567847523e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      4.2514052722708584e-08,
+      5.974529813101981e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      5.621529453492258e-06,
+      1.2570213812068687e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.0007862921338528395,
+      3.440020748257666e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.2314654895817512e-07,
+      1.5530556538578821e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      1.0142983910554904e-06,
+      7.871225534472615e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.0609664968797006e-07,
+      1.3916186389906215e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      5.2902258573794825e-08,
+      2.424463673378341e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      3.686604657104908e-07,
+      8.031435072552995e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.04938667267560959,
+      7.814985110599082e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.00010184092388954014,
+      2.0318995552770502e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.26857274770736694,
+      5.5674827308394015e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      3.2863107435332495e-07,
+      1.2582430599650252e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.0024219562765210867,
+      1.5586888366669882e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.6275314092636108,
+      2.2441679902840406e-05
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      2.604659130156506e-05,
+      1.1371166692697443e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      2.9065617468404525e-07,
+      2.4074317934719147e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      7.48744014344993e-07,
+      3.886359991156496e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      9.892816166257035e-08,
+      6.655406536992814e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      5.733325451728888e-06,
+      1.268656887987163e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      9.526949042992783e-07,
+      0.00012680514191742986
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      2.144918767044146e-07,
+      3.480811983536114e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.011260277591645718,
+      9.909929758578073e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.1173764136174213e-07,
+      3.563671668871393e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.00020066890283487737,
+      2.1527357603190467e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.026465250179171562,
+      0.00011295081640128046
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.4749042520634248e-07,
+      3.567422268702103e-08
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.011261763982474804,
+      2.155904212486348e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.62344458658481e-05,
+      3.228122409382195e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      0.00016219090321101248,
+      5.122167294757674e-07
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.00020166680042166263,
+      1.9279730167909293e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.00012754934141412377,
+      5.6717879488132894e-05
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      5.2209384193702135e-06,
+      5.5265081755351275e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.0015450511127710342,
+      7.85432530392427e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      0.049359746277332306,
+      1.557237510496634e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      1.9469564449536847e-06,
+      1.7567779195815092e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.9906974557670765e-07,
+      1.552994831399701e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      6.368616595864296e-05,
+      5.6871776905609295e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      4.071095827384852e-05,
+      1.2506103303167038e-05
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      4.3188288145756815e-07,
+      1.3938214351583156e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      7.878622909629485e-08,
+      1.5492051943510887e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      1.595982325852674e-06,
+      4.350541530584451e-06
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      2.1479254428413697e-06,
+      7.112788011909288e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.15936002135276794,
+      3.186345929862e-05
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      9.61763134910143e-07,
+      3.5814386478705273e-07
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      0.0030243101064115763,
+      1.1545416782610118e-05
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      3.305324298708001e-06,
+      1.3960715250505018e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "no",
+    "entropy_trace": [
+      9.551483799441485e-07,
+      4.6379561524645396e-08
+    ]
+  },
+  {
+    "gt": true,
+    "response": "yes",
+    "entropy_trace": [
+      1.5172640814853366e-06,
+      3.1243826015270315e-06
+    ]
+  },
+  {
+    "gt": false,
+    "response": "yes",
+    "entropy_trace": [
+      2.1276315237628296e-05,
+      8.004211622392177e-07
+    ]
+  }
+]

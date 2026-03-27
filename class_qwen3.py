@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from transformers import LogitsProcessor, LogitsProcessorList
-
+import pandas as pd
 class EntropyAdaptiveHook:
     """
     支持动态 Alpha 调整的 Hook
@@ -16,9 +16,10 @@ class EntropyAdaptiveHook:
 
     def register(self, model):
         # 适配 Qwen2/3-VL
-        layer = model.model.layers[self.target_layer_idx]
+        layer = model.model.language_model.layers[self.target_layers_idx]
+        
         self.handle = layer.register_forward_hook(self.hook_fn)
-        适配 Qwen2/3-VL
+        print(f"✅ 动态熵驱动 Hook 已挂载至 Layer {self.target_layers_idx}")
         
 
     def hook_fn(self, module, input, output):
@@ -108,3 +109,37 @@ def adaptive_generate(model, tokenizer, input_ids, image_inputs, hook_manager, e
         logits, past_key_values = outpit.logits, output.kv_cache
     
     return generated_ids
+
+
+def save_experiment_results(results_list, base_name="steering_report"):
+    """
+    保存实验结果至 CSV。支持追加写入，且自动处理非标量数据。
+    """
+    # 建议使用固定的文件名以防止生成过多零碎文件，或者按照需求动态命名
+    filename = f"{base_name}.csv"
+
+    # 1. 数据清洗：确保所有的 Tensor 或复杂对象都被转换为 float/str
+    def clean_row(row):
+        new_row = {}
+        for k, v in row.items():
+            if isinstance(v, torch.Tensor):
+                new_row[k] = v.item() if v.numel() == 1 else v.tolist()
+            elif isinstance(v, (list, dict)):
+                new_row[k] = str(v)  # list/dict 转为字符串存入 CSV
+            else:
+                new_row[k] = v
+        return new_row
+
+    cleaned_list = [clean_row(row) for row in results_list]
+    
+    # 2. 转换为 DataFrame
+    df = pd.DataFrame(cleaned_list)
+    
+    # 3. 保存逻辑
+    # 如果文件已存在，则追加（不写 header）；如果不存在，则写入（写 header）
+    import os
+    file_exists = os.path.isfile(filename)
+    
+    df.to_csv(filename, mode='a' if file_exists else 'w', index=False, header=not file_exists)
+    
+    print(f"\n✅ 实验数据已实时保存/追加至: {filename}")

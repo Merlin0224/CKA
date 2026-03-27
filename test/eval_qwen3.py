@@ -1,7 +1,12 @@
 import torch
 from injection import ResidualInjector, ChannelSaliencyGate
 import torch.nn as nn
-from transformers import Qwen2VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
+from transformers import (
+    Qwen3VLForConditionalGeneration, 
+    BitsAndBytesConfig, AutoProcessor,  
+    LogitsProcessor, 
+    LogitsProcessorList
+    )
 from modelscope import snapshot_download
 from dataload import build_pope_dataset, extract_object_from_caption
 import pandas as pd
@@ -9,7 +14,33 @@ import glob
 import numpy as np
 import csv
 import time
-from class_qwen3 import EntropyAdaptiveHook, EntropyDrivenSteeringProcessor, adaptive_generate
+from class_qwen3 import EntropyAdaptiveHook, EntropyDrivenSteeringProcessor, adaptive_generate, save_experiment_results
+import json
+
+
+def calculate_hallucination_rate(results):
+    """
+    科研级结果解析器：从结果字典中提取核心指标并格式化。
+    """
+    if isinstance(results, (float, int)):
+        return f"{results:.2f}%"
+
+    if isinstance(results, dict):
+        # 核心指标：幻觉率 (False Positive Rate)
+        hr = results.get("hallucination_rate", 0)
+        # 辅助指标：准确率和 F1，证明改进不是以牺牲识别能力为代价的
+        acc = results.get("accuracy", 0)
+        f1 = results.get("f1", 0)
+        
+        # 混淆矩阵数据：用于深度分析
+        tp, tn, fp, fn = results.get("tp"), results.get("tn"), results.get("fp"), results.get("fn")
+        
+        # 返回一个格式化的科学字符串
+        return (f"{hr:.2f}% [详细指标: Acc {acc:.2f}%, F1 {f1:.3f}] "
+                f"(TP:{tp}, TN:{tn}, FP:{fp}, FN:{fn})")
+
+    return "N/A"
+
 
 def run_adaptive_eval(
     model,
@@ -31,14 +62,14 @@ def run_adaptive_eval(
         prompt = item['prompt']
 
         messages =[{"role": "user", "content":[{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
-        text = processor.apply_chat_template(message, tokenize=False, add_generation_prompt=True)
+        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = processor(text=[text], images=[image], padding=True, return_tensors="pt").to(model.device)
 
         entropy_processor = EntropyDrivenSteeringProcessor(hook_manager, threshold, base_alpha)
         logits_processor = LogitsProcessorList([entropy_processor])
 
         with torch.no_grad():
-            input_ids_len = input['input_ids'].shape[1]
+            input_ids_len = inputs['input_ids'].shape[1]
             output_ids = model.generate(
                 **inputs,
                 max_new_tokens=5,
@@ -54,16 +85,16 @@ def run_adaptive_eval(
             "entropy_trace": entropy_processor.entropy_trace
         })
 
-        model_said_yes = response.startwith("yes")
+        model_said_yes = response.startswith("yes")
         if label_exists and model_said_yes: tp += 1
         elif not label_exists and not model_said_yes: tn += 1
         elif not label_exists and model_said_yes: fp += 1 # 幻觉 (FP)
-        elif label_exits and not model_said_yes: fn += 1
+        elif label_exists and not model_said_yes: fn += 1
 
     acc = (tp + tn) / (tp + tn + fp + fn)
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0
     recall = tp / (tp + fp) if (tp + fn) > 0 else 0
-    f1 = 2 * (precision * recall) / (precision + recall) if (precision)
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     hallucination_rate = fp / (fp + tn) * 100 if (fp + tn) > 0 else 0
 
     res_dict ={
@@ -74,7 +105,7 @@ def run_adaptive_eval(
 
 def run_dynamic_layer_wise_experiment(
     model, processor, train_set, test_set,
-    swwep_layers, thresholds, base_alpha=30.0, num_samples=50
+    sweep_layers, thresholds, base_alpha=30.0, num_samples=50
 ):
     """
     结合 Phase A 和 Phase B 的终极实验管道。
@@ -90,14 +121,25 @@ def run_dynamic_layer_wise_experiment(
     print("="*60)
 
     # 传入 hook_manager=None, 纯粹作为探针测定分布
-    baseline_res, baseline_traces = run_adaptive_eval(model, test_set, hook_manager=None)
+    baseline_res, baseline_traces = run_adaptive_eval(model, processor, test_set, hook_manager=None)
     print(f"✅ Baseline 幻觉率: {calculate_hallucination_rate(baseline_res)}")
 
     results_list.append({"Layer": "Baseline", "Threshold": "N/A", "Alpha": 0.0, **baseline_res})
     
+    def make_serializable(data):
+        if isinstance(data, torch.Tensor):
+            return data.item() if data.numel() == 1 else data.tolist()
+        if isinstance(data, list):
+            return [make_serializable(x) for x in data]
+        if isinstance(data, dict):
+            return {k: make_serializable(v) for k, v in data.items()}
+        return data
+
+    clean_traces = make_serializable(baseline_traces)
+
     with open("phase_a_entropy_traces.json", "w", encoding="utf-8") as f:
-        json.dump(baseline_traces, f, ensure_ascii=False, indent=2)
-    print("💾 Baseline 熵轨迹已保存至 phase_a_entropy_traces.json")
+        json.dump(clean_traces, f, ensure_ascii=False, indent=2)
+    print("✅ Baseline 熵轨迹已成功清洗并保存至 phase_a_entropy_traces.json")
 
     # ==========================================
     # Phase B: 跨层级的熵驱动自适应动态干预
@@ -114,11 +156,11 @@ def run_dynamic_layer_wise_experiment(
         steering_vec = extract_visual_truth_vector(model, processor, train_set, target_layer_idx=layer_idx, num_samples=num_samples)
 
         # 2. 挂载动态 Hook
-        dynamic_hook = EntropyAdativeHook(steering_vector=steering_vector, target_layer_idx=layer_idx)
+        dynamic_hook = EntropyAdaptiveHook(model=model, steering_vector=steering_vec, target_layers_idx=layer_idx)
         dynamic_hook.register(model)
 
         # 3. 在当前层扫描不同的熵阈值
-        for threshold in thresholds:
+        for threshold in thresholds: 
             print(f"\n--- [Layer {layer_idx}] 测试 Threshold: {threshold} | 基础注入强度 Alpha: {base_alpha} ---")
 
             res, _ = run_adaptive_eval(
@@ -139,7 +181,14 @@ def run_dynamic_layer_wise_experiment(
                 **res
             })
 
-            save_experiment_results(results_list, base_name="dynamic_steering_report")
+            current_row = {
+                "Layer": layer_idx, 
+                "Threshold": threshold, 
+                "Alpha": base_alpha, 
+                **res,
+            }
+    
+            save_experiment_results([current_row], base_name="dynamic_steering_report")
 
 
         # 4. 【SysML 核心防坑】：进入下一层前，必须彻底卸载当前层的 Hook
@@ -159,7 +208,7 @@ def extract_visual_truth_vector(model, processor, dataset, target_layer_idx, num
         feat = output[0].detach() if isinstance(output, tuple) else output.detach()
         activation_cache['feat'] = feat
 
-    layer_module = model.model.layers[target_layer_idx]
+    layer_module = model.model.language_model.layers[target_layer_idx]
     handle = layer_module.register_forward_hook(cache_hook)
 
     pos_activations = []
@@ -173,7 +222,7 @@ def extract_visual_truth_vector(model, processor, dataset, target_layer_idx, num
         text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = processor(text=[text], images=[image], padding=True, return_tensors="pt").to(model.device)
 
-        with torch,no_grad():
+        with torch.no_grad():
             model(**inputs)
             # 取最后一个文本 token (即生成的起手势位置)的激活状态
             last_token_feat = activation_cache['feat'][:, -1:, :].mean(dim=0, keepdim=True)
@@ -214,14 +263,25 @@ def main():
     model_dir = "/root/autodl-tmp/.cache/modelscope/hub/models/qwen/Qwen3-VL-4B-Instruct/"
     processor = AutoProcessor.from_pretrained(model_dir, local_files_only=True)
     quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True, bnb_4bit_quant_type="nf4"
+        load_in_4bit=True, 
+        bnb_4bit_compute_dtype=torch.bfloat16, 
+        bnb_4bit_use_double_quant=True, 
+        bnb_4bit_quant_type="nf4"
     )    
-    model = Qwen2VLForConditionalGeneration.from_pretrained(
-        model_dir, torch_dtype=torch.bfloat16, 
-        device_map="auto", quantization_config=quantization_config, local_files_only=True
+    model = Qwen3VLForConditionalGeneration.from_pretrained(
+        model_dir, 
+        torch_dtype=torch.bfloat16, 
+        device_map="auto", 
+        quantization_config=quantization_config, 
+        local_files_only=True
     )
+    # print("🔍 探测模型架构层级路径:")
+    # # 打印所有的模块名
+    # for name, module in model.named_modules():
+    #     if "layers" in name and "self_attn" in name: # 聚焦到包含 layers 和注意力层的关键部位
+    #         print(f"层级路径示例: {name}")
     
-    num_samples
+    num_samples = 50
     LOCAL_DATA_DIR = "/root/autodl-tmp/modelscope_datasets/flickr30k/data"
     test_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=num_samples)
     train_set = build_pope_dataset(LOCAL_DATA_DIR, num_samples=num_samples)
