@@ -45,31 +45,62 @@ class ChannelSaliencyGate(nn.Module):
     通道显著性门控
     通过对特征通道的加权，抑制背景噪声，放大语义显著通道
     """
-    def __init__(self, channels, reduction=8):
-        super().__init__()
-        self.avg_pool = nn.AdaptiveAvgPool1d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(channels, channels // reduction, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Linear(channels // reduction, channels, bias=False),
-            nn.Sigmoid()
-        )
+    # def __init__(self, channels, reduction=8):
+    #     super().__init__()
+    #     self.avg_pool = nn.AdaptiveAvgPool1d(1)
+    #     self.fc = nn.Sequential(
+    #         nn.Linear(channels, channels // reduction, bias=False),
+    #         nn.ReLU(inplace=True),
+    #         nn.Linear(channels // reduction, channels, bias=False),
+    #         nn.Sigmoid()
+    #     )
     
+    # def forward(self, x):
+    #      # 自动探测维度：如果输入是 2D [Batch, Channels]，转为 3D 处理
+    #     is_2d = (x.dim() == 2)
+    #     if is_2d:
+    #         x = x.unsqueeze(1) # 变为 [Batch, 1, Channels]
+            
+    #     b, s, c = x.shape
+    #     # 1. 空间池化: [Batch, Channels, 1]
+    #     y = self.avg_pool(x.permute(0, 2, 1))
+    #     # 2. 预测权重: [Batch, Channels, 1]
+    #     y = self.fc(y.view(b, c)).view(b, c, 1)
+    #     # 3. 加权: [Batch, Seq, Channels]
+    #     out = x * y.permute(0, 2, 1)
+        
+    #     return out.squeeze(1) if is_2d else out
+
+    def __init__(self, temperature=1.0):
+        super().__init__()
+        self.temperature = temperature # 控制对比度的超参数，无需训练
+        
     def forward(self, x):
-         # 自动探测维度：如果输入是 2D [Batch, Channels]，转为 3D 处理
+        # x 维度: [batch, seq_len, channels]
+        
+        # 1. 自动探测：如果是平铺的 2D 特征，直接放行（因为无法算空间方差）
         is_2d = (x.dim() == 2)
         if is_2d:
-            x = x.unsqueeze(1) # 变为 [Batch, 1, Channels]
+            return x
             
-        b, s, c = x.shape
-        # 1. 空间池化: [Batch, Channels, 1]
-        y = self.avg_pool(x.permute(0, 2, 1))
-        # 2. 预测权重: [Batch, Channels, 1]
-        y = self.fc(y.view(b, c)).view(b, c, 1)
-        # 3. 加权: [Batch, Seq, Channels]
-        out = x * y.permute(0, 2, 1)
+        # 2. 计算每个通道在空间(seq_len)维度上的方差 (Variance)
+        # 结果维度: [batch, 1, channels]
+        channel_variance = torch.var(x, dim=1, keepdim=True)
         
-        return out.squeeze(1) if is_2d else out
+        # 3. Min-Max 归一化，将其转化为 0~1 之间的门控权重
+        # 减去最小值，除以极差
+        v_min = channel_variance.min(dim=-1, keepdim=True)[0]
+        v_max = channel_variance.max(dim=-1, keepdim=True)[0]
+        
+        # 得到天然的显著性权重 (方差越大，权重越接近 1；方差越小，权重越接近 0)
+        gate_weight = (channel_variance - v_min) / (v_max - v_min + 1e-6)
+        
+        # 4. (可选) 增加锐化机制
+        # 用 temperature 控制过滤的强度
+        gate_weight = torch.pow(gate_weight, self.temperature)
+        
+        # 5. 动态重加权：物理过滤背景噪声！
+        return x * gate_weight
 
 def get_injection_hook(injector_module, aligned_visual):
     def hook(module, input, output):

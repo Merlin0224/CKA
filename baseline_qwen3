@@ -1,1 +1,8 @@
 Baseline 幻觉率: 28.26% [详细指标: Acc 85.42%, F1 0.790] (TP:49, TN:33, FP:13, FN:1)
+🔥 [统计学实验结果] 表征动力学分析:
+Layer 00 -> Layer 04 | CKA: 0.8559 (±0.0214)
+Layer 00 -> Layer 08 | CKA: 0.0093 (±0.0010)
+Layer 00 -> Layer 12 | CKA: 0.0092 (±0.0010)
+Layer 00 -> Layer 16 | CKA: 0.0106 (±0.0021)
+Layer 00 -> Layer 20 | CKA: 0.0104 (±0.0021)
+Layer 00 -> Layer 24 | CKA: 0.0107 (±0.0020)

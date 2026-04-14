@@ -4,7 +4,7 @@ import torch
 import glob
 import numpy as np
 from datasets import load_dataset
-from transformers import Qwen2VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
+from transformers import Qwen3VLForConditionalGeneration, BitsAndBytesConfig, AutoProcessor
 from modelscope import snapshot_download
 import pyarrow.parquet as pq
 from PIL import Image
@@ -35,25 +35,41 @@ def main():
     MAX_SAMPLES = 50
 
     
-    model_dir = snapshot_download("qwen/Qwen2-VL-7B-Instruct")
-    processor = AutoProcessor.from_pretrained(model_dir)
+    # model_dir = snapshot_download("qwen/Qwen2-VL-7B-Instruct")
+    # processor = AutoProcessor.from_pretrained(model_dir)
 
+    # quantization_config = BitsAndBytesConfig(
+    #     load_in_4bit=True,
+    #     bnb_4bit_compute_dtype=torch.bfloat16,
+    #     bnb_4bit_use_double_quant=True,
+    #     bnb_4bit_quant_type="nf4"
+    # )
+
+    # print("正在加载模型...")
+    # model = Qwen2VLForConditionalGeneration.from_pretrained(
+    #     model_dir,
+    #     torch_dtype=torch.bfloat16,
+    #     device_map="auto",
+    #     quantization_config=quantization_config
+    # )
+
+    model_dir = "/root/autodl-tmp/.cache/modelscope/hub/models/qwen/Qwen3-VL-8B-Instruct/"
+    processor = AutoProcessor.from_pretrained(model_dir, local_files_only=True)
     quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        bnb_4bit_use_double_quant=True,
+        load_in_4bit=True, 
+        bnb_4bit_compute_dtype=torch.bfloat16, 
+        bnb_4bit_use_double_quant=True, 
         bnb_4bit_quant_type="nf4"
+    )    
+    model = Qwen3VLForConditionalGeneration.from_pretrained(
+        model_dir, 
+        torch_dtype=torch.bfloat16, 
+        device_map="auto", 
+        quantization_config=quantization_config, 
+        local_files_only=True
     )
 
-    print("正在加载模型...")
-    model = Qwen2VLForConditionalGeneration.from_pretrained(
-        model_dir,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-        quantization_config=quantization_config
-    )
-
-    probe_layers = [0, 6, 12, 18, 24]
+    probe_layers = [0, 4, 8, 12, 16, 20, 24]
     storage = {}
 
     def get_hook(name):

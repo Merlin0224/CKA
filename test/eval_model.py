@@ -166,7 +166,7 @@ def load_Channel(model):
             if first_layer:
                 in_dim = first_layer.in_features
                 print(f"✅ 自动探测到通道维度 (in_dim): {in_dim}")
-            gate = ChannelSaliencyGate(channels=in_dim).to(device=model.device, dtype=torch.bfloat16)
+            gate = ChannelSaliencyGate().to(device=model.device, dtype=torch.bfloat16)
             original_mlp = module
             new_mlp = nn.Sequential(gate, original_mlp)
             
